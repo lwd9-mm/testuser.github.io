@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>串二代西昌烧烤-扫码点单</title>
+    <style>
+        * {margin:0;padding:0;box-sizing:border-box;}
+        body {font-family:"Microsoft Yahei",sans-serif;max-width:600px;margin:0 auto;padding:15px;background:#f8f8f8;padding-bottom:150px;-webkit-tap-highlight-color:transparent;}
+        .header {text-align:center;margin-bottom:25px;}
+        .header h1 {color:#e63946;font-size:28px;margin:0;}
+        .table-tip {text-align:center;color:#666;font-size:14px;margin:-15px 0 20px;}
+        .category {margin:20px 0;}
+        .category h2 {font-size:20px;color:#333;border-bottom:2px solid #e63946;padding-bottom:6px;margin-bottom:12px;}
+        .dish-item {display:flex;align-items:center;background:#fff;padding:10px;margin:8px 0;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.05);}
+        .dish-img {width:70px;height:70px;border-radius:6px;object-fit:cover;margin-right:12px;border:1px solid #eee;}
+        .dish-info {flex:1;}
+        .dish-name {font-size:15px;color:#222;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        .dish-price {font-size:15px;color:#e63946;font-weight:bold;margin-top:3px;}
+        .quantity-control {display:flex;align-items:center;}
+        .quantity-btn {width:32px;height:32px;border:1px solid #ddd;background:#f5f5f5;border-radius:4px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;}
+        .quantity-btn:active {background:#ddd;transform:scale(0.95);}
+        .quantity {margin:0 10px;font-size:16px;min-width:25px;text-align:center;}
+        .cart {position:fixed;bottom:20px;right:20px;background:#e63946;color:#fff;width:65px;height:65px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 4px 10px rgba(0,0,0,0.3);cursor:pointer;z-index:100;}
+        .cart-badge {position:absolute;top:-8px;right:-8px;background:#fff;color:#e63946;width:24px;height:24px;border-radius:50%;font-size:13px;display:flex;align-items:center;justify-content:center;border:2px solid #e63946;}
+        .cart-panel {position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#fff;width:90%;max-width:300px;border-radius:12px;box-shadow:0 4px 15px rgba(0,0,0,0.2);padding:15px;display:none;z-index:99;max-height:300px;overflow-y:auto;}
+        .cart-panel.active {display:block;animation:fadeIn 0.2s ease;}
+        @keyframes fadeIn {from {opacity:0;transform:translate(-50%,10px);} to {opacity:1;transform:translate(-50%,0);}}
+        .cart-item {display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0;}
+        .cart-item:last-child {border-bottom:none;}
+        .cart-item-name {font-size:14px;color:#333;}
+        .cart-item-price {font-size:14px;color:#e63946;}
+        .cart-total {display:flex;justify-content:space-between;font-weight:bold;font-size:16px;margin:15px 0 10px;padding-top:10px;border-top:2px solid #e63946;}
+        .submit-btn {width:100%;background:#e63946;color:#fff;border:none;padding:12px;border-radius:8px;font-size:16px;cursor:pointer;margin-top:8px;}
+        .add-order-btn {width:100%;background:#457b9d;color:#fff;border:none;padding:10px;border-radius:8px;font-size:14px;cursor:pointer;margin-top:5px;display:none;}
+        .order-form input, .order-form select {width:100%;padding:10px;margin:6px 0;border:1px solid #ddd;border-radius:6px;font-size:14px;outline:none;}
+        .order-form input:focus, .order-form select:focus {border-color:#e63946;}
+        .empty-cart {text-align:center;color:#999;padding:20px 0;font-size:14px;}
+        .order-status-toast {position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.7);color:#fff;padding:10px 18px;border-radius:6px;z-index:999;display:none;font-size:14px;}
+    </style>
+</head>
+<body>
+    <div class="header"><h1>串二代西昌烧烤</h1></div>
+    <div class="table-tip">请填写桌号/房号，选择菜品后提交</div>
+    <div class="order-status-toast" id="statusToast"></div>
+    <!-- 荤菜类 -->
+    <div class="category">
+        <h2>🔥 荤菜类</h2>
+        <div class="dish-item" data-id="m1"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="永郎特色牛排"><div class="dish-info"><span class="dish-name">永郎特色牛排</span><span class="dish-price">¥45元/个</span></div><div class="quantity-control" data-dish="永郎特色牛排" data-price="45"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m2"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="盘龙小肠"><div class="dish-info"><span class="dish-name">盘龙小肠</span><span class="dish-price">¥30元/份</span></div><div class="quantity-control" data-dish="盘龙小肠" data-price="30"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m3"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="甘洛小乳猪"><div class="dish-info"><span class="dish-name">甘洛小乳猪</span><span class="dish-price">¥25元/条</span></div><div class="quantity-control" data-dish="甘洛小乳猪" data-price="25"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m4"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="鲫鱼"><div class="dish-info"><span class="dish-name">鲫鱼</span><span class="dish-price">¥20元/条</span></div><div class="quantity-control" data-dish="鲫鱼" data-price="20"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m5"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="罗非鱼"><div class="dish-info"><span class="dish-name">罗非鱼</span><span class="dish-price">¥20元/条</span></div><div class="quantity-control" data-dish="罗非鱼" data-price="20"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m6"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="牛腱子"><div class="dish-info"><span class="dish-name">牛腱子</span><span class="dish-price">¥5元/串</span></div><div class="quantity-control" data-dish="牛腱子" data-price="5"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m7"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="大鸡爪"><div class="dish-info"><span class="dish-name">大鸡爪(卤味生烤)</span><span class="dish-price">¥5元/串</span></div><div class="quantity-control" data-dish="大鸡爪(卤味生烤)" data-price="5"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m8"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="烤鸡腿"><div class="dish-info"><span class="dish-name">烤鸡腿</span><span class="dish-price">¥5元/串</span></div><div class="quantity-control" data-dish="烤鸡腿" data-price="5"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m9"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="背柳肉"><div class="dish-info"><span class="dish-name">背柳肉</span><span class="dish-price">¥5元/串</span></div><div class="quantity-control" data-dish="背柳肉" data-price="5"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m10"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="猪小肠"><div class="dish-info"><span class="dish-name">猪小肠</span><span class="dish-price">¥4元/串</span></div><div class="quantity-control" data-dish="猪小肠" data-price="4"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m11"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="嫩牛肉"><div class="dish-info"><span class="dish-name">嫩牛肉</span><span class="dish-price">¥4元/串</span></div><div class="quantity-control" data-dish="嫩牛肉" data-price="4"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m12"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="鲜毛肚"><div class="dish-info"><span class="dish-name">鲜毛肚</span><span class="dish-price">¥4元/串</span></div><div class="quantity-control" data-dish="鲜毛肚" data-price="4"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m13"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="牛小肠"><div class="dish-info"><span class="dish-name">牛小肠</span><span class="dish-price">¥4元/串</span></div><div class="quantity-control" data-dish="牛小肠" data-price="4"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m14"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="牛胸标"><div class="dish-info"><span class="dish-name">牛胸标</span><span class="dish-price">¥4元/串</span></div><div class="quantity-control" data-dish="牛胸标" data-price="4"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m15"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="牛筋"><div class="dish-info"><span class="dish-name">牛筋</span><span class="dish-price">¥4元/串</span></div><div class="quantity-control" data-dish="牛筋" data-price="4"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m16"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="郡肝"><div class="dish-info"><span class="dish-name">郡肝</span><span class="dish-price">¥4元/串</span></div><div class="quantity-control" data-dish="郡肝" data-price="4"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m17"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="黄喉"><div class="dish-info"><span class="dish-name">黄喉</span><span class="dish-price">¥4元/串</span></div><div class="quantity-control" data-dish="黄喉" data-price="4"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m18"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="鱿鱼板"><div class="dish-info"><span class="dish-name">鱿鱼板</span><span class="dish-price">¥5元/串</span></div><div class="quantity-control" data-dish="鱿鱼板" data-price="5"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m19"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="鱿鱼须"><div class="dish-info"><span class="dish-name">鱿鱼须</span><span class="dish-price">¥5元/串</span></div><div class="quantity-control" data-dish="鱿鱼须" data-price="5"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m20"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="鸭脑壳"><div class="dish-info"><span class="dish-name">鸭脑壳</span><span class="dish-price">¥5元/串</span></div><div class="quantity-control" data-dish="鸭脑壳" data-price="5"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m21"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="小黄鱼"><div class="dish-info"><span class="dish-name">小黄鱼</span><span class="dish-price">¥5元/串</span></div><div class="quantity-control" data-dish="小黄鱼" data-price="5"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m22"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="鸡屁股"><div class="dish-info"><span class="dish-name">鸡屁股</span><span class="dish-price">¥5元/串</span></div><div class="quantity-control" data-dish="鸡屁股" data-price="5"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m23"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="虾"><div class="dish-info"><span class="dish-name">虾</span><span class="dish-price">¥5元/串</span></div><div class="quantity-control" data-dish="虾" data-price="5"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m24"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="鲜鱼排"><div class="dish-info"><span class="dish-name">鲜鱼排</span><span class="dish-price">¥3元/串</span></div><div class="quantity-control" data-dish="鲜鱼排" data-price="3"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m25"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="鲜鱼泡"><div class="dish-info"><span class="dish-name">鲜鱼泡</span><span class="dish-price">¥3元/串</span></div><div class="quantity-control" data-dish="鲜鱼泡" data-price="3"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m26"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="鲜鱼片"><div class="dish-info"><span class="dish-name">鲜鱼片</span><span class="dish-price">¥3元/串</span></div><div class="quantity-control" data-dish="鲜鱼片" data-price="3"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m27"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="猪肝"><div class="dish-info"><span class="dish-name">猪肝</span><span class="dish-price">¥2元/串</span></div><div class="quantity-control" data-dish="猪肝" data-price="2"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m28"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="乌鸡肉串"><div class="dish-info"><span class="dish-name">乌鸡肉串</span><span class="dish-price">¥2元/串</span></div><div class="quantity-control" data-dish="乌鸡肉串" data-price="2"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m29"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="五花肉"><div class="dish-info"><span class="dish-name">五花肉</span><span class="dish-price">¥3元/串</span></div><div class="quantity-control" data-dish="五花肉" data-price="3"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m30"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="猪皮"><div class="dish-info"><span class="dish-name">猪皮</span><span class="dish-price">¥3元/串</span></div><div class="quantity-control" data-dish="猪皮" data-price="3"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m31"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="鸡脚筋"><div class="dish-info"><span class="dish-name">鸡脚筋</span><span class="dish-price">¥3元/串</span></div><div class="quantity-control" data-dish="鸡脚筋" data-price="3"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m32"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="掌中宝"><div class="dish-info"><span class="dish-name">掌中宝</span><span class="dish-price">¥3元/串</span></div><div class="quantity-control" data-dish="掌中宝" data-price="3"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m33"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="鸡皮"><div class="dish-info"><span class="dish-name">鸡皮</span><span class="dish-price">¥3元/串</span></div><div class="quantity-control" data-dish="鸡皮" data-price="3"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m34"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="猪腰子"><div class="dish-info"><span class="dish-name">猪腰子</span><span class="dish-price">¥3元/串</span></div><div class="quantity-control" data-dish="猪腰子" data-price="3"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m35"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="孜然五花肉"><div class="dish-info"><span class="dish-name">孜然五花肉</span><span class="dish-price">¥2元/串</span></div><div class="quantity-control" data-dish="孜然五花肉" data-price="2"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m36"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="火腿肠"><div class="dish-info"><span class="dish-name">火腿肠</span><span class="dish-price">¥2元/串</span></div><div class="quantity-control" data-dish="火腿肠" data-price="2"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m37"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="蒜香排骨"><div class="dish-info"><span class="dish-name">蒜香排骨</span><span class="dish-price">¥10元/串</span></div><div class="quantity-control" data-dish="蒜香排骨" data-price="10"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="m38"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="松板肉"><div class="dish-info"><span class="dish-name">松板肉</span><span class="dish-price">¥5元/串</span></div><div class="quantity-control" data-dish="松板肉" data-price="5"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+    </div>
+    <!-- 素菜类 -->
+    <div class="category">
+        <h2>🥬 素菜类</h2>
+        <div class="dish-item" data-id="v1"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="茄子"><div class="dish-info"><span class="dish-name">茄子</span><span class="dish-price">¥10元/个</span></div><div class="quantity-control" data-dish="茄子" data-price="10"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="v2"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="口蘑"><div class="dish-info"><span class="dish-name">口蘑</span><span class="dish-price">¥2元/串</span></div><div class="quantity-control" data-dish="口蘑" data-price="2"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="v3"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="小馒头"><div class="dish-info"><span class="dish-name">小馒头</span><span class="dish-price">¥1元/份</span></div><div class="quantity-control" data-dish="小馒头" data-price="1"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="v4"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="土豆片"><div class="dish-info"><span class="dish-name">大凉山红皮土豆片</span><span class="dish-price">¥1元/串</span></div><div class="quantity-control" data-dish="大凉山红皮土豆片" data-price="1"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="v5"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="金针菇"><div class="dish-info"><span class="dish-name">金针菇</span><span class="dish-price">¥2元/串</span></div><div class="quantity-control" data-dish="金针菇" data-price="2"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="v6"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="厚豆腐干"><div class="dish-info"><span class="dish-name">厚豆腐干</span><span class="dish-price">¥1元/串</span></div><div class="quantity-control" data-dish="厚豆腐干" data-price="1"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="v7"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="韭菜"><div class="dish-info"><span class="dish-name">韭菜</span><span class="dish-price">¥2元/串</span></div><div class="quantity-control" data-dish="韭菜" data-price="2"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="v8"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="藕片"><div class="dish-info"><span class="dish-name">藕片</span><span class="dish-price">¥1元/串</span></div><div class="quantity-control" data-dish="藕片" data-price="1"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="v9"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="三月瓜"><div class="dish-info"><span class="dish-name">三月瓜</span><span class="dish-price">¥4元/串</span></div><div class="quantity-control" data-dish="三月瓜" data-price="4"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="v10"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="魔芋"><div class="dish-info"><span class="dish-name">魔芋</span><span class="dish-price">¥1元/串</span></div><div class="quantity-control" data-dish="魔芋" data-price="1"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="v11"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="起泡豆干卷"><div class="dish-info"><span class="dish-name">起泡豆干卷</span><span class="dish-price">¥4元/串</span></div><div class="quantity-control" data-dish="起泡豆干卷" data-price="4"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="v12"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="烤苕皮"><div class="dish-info"><span class="dish-name">烤苕皮</span><span class="dish-price">¥4元/串</span></div><div class="quantity-control" data-dish="烤苕皮" data-price="4"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="v13"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="烤面筋"><div class="dish-info"><span class="dish-name">烤面筋</span><span class="dish-price">¥3元/串</span></div><div class="quantity-control" data-dish="烤面筋" data-price="3"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="v14"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="卤牛皮豆干卷"><div class="dish-info"><span class="dish-name">卤牛皮豆干卷</span><span class="dish-price">¥5元/串</span></div><div class="quantity-control" data-dish="卤牛皮豆干卷" data-price="5"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+    </div>
+    <!-- 小吃类 -->
+    <div class="category">
+        <h2>🍟 小吃类</h2>
+        <div class="dish-item" data-id="s1"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="柠檬无骨鸡爪"><div class="dish-info"><span class="dish-name">柠檬无骨鸡爪</span><span class="dish-price">¥25元/份</span></div><div class="quantity-control" data-dish="柠檬无骨鸡爪" data-price="25"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="s2"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="蒜香无骨鸡爪"><div class="dish-info"><span class="dish-name">蒜香无骨鸡爪</span><span class="dish-price">¥20元/份</span></div><div class="quantity-control" data-dish="蒜香无骨鸡爪" data-price="20"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="s3"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="泡椒鸡爪"><div class="dish-info"><span class="dish-name">泡椒鸡爪</span><span class="dish-price">¥20元/份</span></div><div class="quantity-control" data-dish="泡椒鸡爪" data-price="20"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="s4"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="炝炒鸭掌"><div class="dish-info"><span class="dish-name">炝炒鸭掌</span><span class="dish-price">¥4元/个</span></div><div class="quantity-control" data-dish="炝炒鸭掌" data-price="4"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="s5"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="酸菜肉丝炒饭"><div class="dish-info"><span class="dish-name">酸菜肉丝炒饭</span><span class="dish-price">¥25元/份</span></div><div class="quantity-control" data-dish="酸菜肉丝炒饭" data-price="25"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="s6"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="蛋炒饭"><div class="dish-info"><span class="dish-name">蛋炒饭</span><span class="dish-price">¥25元/份</span></div><div class="quantity-control" data-dish="蛋炒饭" data-price="25"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="s7"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="火腿肠炒饭"><div class="dish-info"><span class="dish-name">火腿肠炒饭</span><span class="dish-price">¥12元/份</span></div><div class="quantity-control" data-dish="火腿肠炒饭" data-price="12"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+    </div>
+    <!-- 酒水饮料 -->
+    <div class="category">
+        <h2>🍻 酒水饮料</h2>
+        <div class="dish-item" data-id="d1"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="唯怡豆奶"><div class="dish-info"><span class="dish-name">唯怡豆奶</span><span class="dish-price">¥5元/瓶</span></div><div class="quantity-control" data-dish="唯怡豆奶" data-price="5"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="d2"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="加多宝"><div class="dish-info"><span class="dish-name">加多宝</span><span class="dish-price">¥5元/瓶</span></div><div class="quantity-control" data-dish="加多宝" data-price="5"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="d3"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="雪碧"><div class="dish-info"><span class="dish-name">雪碧</span><span class="dish-price">¥4元/罐</span></div><div class="quantity-control" data-dish="雪碧" data-price="4"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="d4"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="苏打水"><div class="dish-info"><span class="dish-name">苏打水</span><span class="dish-price">¥5元/罐</span></div><div class="quantity-control" data-dish="苏打水" data-price="5"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="d5"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="可乐"><div class="dish-info"><span class="dish-name">可乐</span><span class="dish-price">¥4元/罐</span></div><div class="quantity-control" data-dish="可乐" data-price="4"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="d6"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="雪花勇闯天涯"><div class="dish-info"><span class="dish-name">雪花勇闯天涯</span><span class="dish-price">¥8元/瓶</span></div><div class="quantity-control" data-dish="雪花勇闯天涯" data-price="8"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="d7"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="雪花纯生"><div class="dish-info"><span class="dish-name">雪花纯生</span><span class="dish-price">¥10元/瓶</span></div><div class="quantity-control" data-dish="雪花纯生" data-price="10"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="d8"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="郎歪"><div class="dish-info"><span class="dish-name">郎歪</span><span class="dish-price">¥22元/瓶</span></div><div class="quantity-control" data-dish="郎歪" data-price="22"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="d9"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="梅见"><div class="dish-info"><span class="dish-name">梅见</span><span class="dish-price">¥35元/瓶</span></div><div class="quantity-control" data-dish="梅见" data-price="35"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+        <div class="dish-item" data-id="d10"><img class="dish-img" src="https://imgtu.com/i/串二代西昌烧烤.png" alt="矿泉水"><div class="dish-info"><span class="dish-name">矿泉水</span><span class="dish-price">¥2元/瓶</span></div><div class="quantity-control" data-dish="矿泉水" data-price="2"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div></div>
+    </div>
+    <!-- 购物车 -->
+    <div class="cart" id="cartIcon">
+        <span>🛒</span>
+        <span class="cart-badge" id="cartBadge">0</span>
+    </div>
+    <!-- 购物车面板：保留房号/桌号输入框 -->
+    <div class="cart-panel" id="cartPanel">
+        <div class="order-form">
+            <input type="text" id="roomTableInput" placeholder="请输入桌号/房号（必填）">
+            <input type="tel" id="phoneInput" placeholder="请输入手机号（必填）">
+            <select id="spicyLevelSelect">
+                <option value="">请选择辣度（必填）</option>
+                <option value="不辣">不辣</option>
+                <option value="微辣">微辣</option>
+                <option value="中辣">中辣</option>
+                <option value="特辣">特辣</option>
+            </select>
+            <select id="scallionPrefSelect">
+                <option value="">葱花香菜</option>
+                <option value="要">要</option>
+                <option value="不要">不要</option>
+            </select>
+        </div>
+        <div id="cartItems">
+            <div class="empty-cart">购物车是空的</div>
+        </div>
+        <div class="cart-total">
+            <span>合计：</span>
+            <span id="totalPrice">¥0.00</span>
+        </div>
+        <button class="submit-btn" id="submitBtn">提交订单</button>
+        <button class="add-order-btn" id="addOrderBtn">追加订单</button>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 全局变量：移除本地存储，改用网络提交
+            let cart = {};
+            let currentOrderId = '';
+            // ********** 只需要改这里 **********
+            // 替换成老板的【微信推送地址】（免费获取，看第二步）
+            const PUSH_URL = 'https://sctapi.ftqq.com/SCT314509TYKnLDF9wwmFa7C9ywthWcqey.send';
+            // ********** 改完上面这行就行 **********
+            
+            // DOM元素
+            const cartIcon = document.getElementById('cartIcon');
+            const cartPanel = document.getElementById('cartPanel');
+            const cartBadge = document.getElementById('cartBadge');
+            const cartItems = document.getElementById('cartItems');
+            const totalPrice = document.getElementById('totalPrice');
+            const submitBtn = document.getElementById('submitBtn');
+            const addOrderBtn = document.getElementById('addOrderBtn');
+            const phoneInput = document.getElementById('phoneInput');
+            const roomTableInput = document.getElementById('roomTableInput');
+            const spicyLevelSelect = document.getElementById('spicyLevelSelect');
+            const scallionPrefSelect = document.getElementById('scallionPrefSelect');
+            const statusToast = document.getElementById('statusToast');
+            // 初始化
+            initCart();
+            bindQuantityEvents();
+            bindCartToggle();
+            bindOrderButtons();
+            // --- 核心功能函数 ---
+            function initCart() {
+                renderCart();
+                calcTotal();
+            }
+            function bindQuantityEvents() {
+                document.querySelectorAll('.quantity-control').forEach(control => {
+                    const dishName = control.dataset.dish;
+                    const price = parseFloat(control.dataset.price);
+                    const minusBtn = control.querySelector('.minus');
+                    const plusBtn = control.querySelector('.plus');
+                    const quantitySpan = control.querySelector('.quantity');
+                    // 初始化数量
+                    quantitySpan.textContent = cart[dishName]?.qty || 0;
+                    updateButtonStatus(dishName, minusBtn);
+                    // 加菜
+                    plusBtn.addEventListener('click', () => {
+                        if (!cart[dishName]) cart[dishName] = { qty: 0, price: price };
+                        cart[dishName].qty++;
+                        quantitySpan.textContent = cart[dishName].qty;
+                        updateButtonStatus(dishName, minusBtn);
+                        calcTotal();
+                        renderCart();
+                    });
+                    // 减菜
+                    minusBtn.addEventListener('click', () => {
+                        if (cart[dishName]?.qty > 0) {
+                            cart[dishName].qty--;
+                            quantitySpan.textContent = cart[dishName].qty;
+                            updateButtonStatus(dishName, minusBtn);
+                            calcTotal();
+                            renderCart();
+                        }
+                    });
+                });
+            }
+            function updateButtonStatus(dishName, minusBtn) {
+                minusBtn.disabled = (cart[dishName]?.qty || 0) <= 0;
+            }
+            function bindCartToggle() {
+                cartIcon.addEventListener('click', () => {
+                    cartPanel.classList.toggle('active');
+                });
+            }
+            function bindOrderButtons() {
+                // 提交新订单
+                submitBtn.addEventListener('click', () => submitOrder(false));
+                // 追加订单
+                addOrderBtn.addEventListener('click', () => {
+                    if (!currentOrderId) {
+                        showStatusToast('请先提交主订单再追加！');
+                        return;
+                    }
+                    submitOrder(true);
+                });
+            }
+            // 提交订单核心函数：对接微信推送
+            function submitOrder(isAdd) {
+                // 获取用户输入
+                const roomTable = roomTableInput.value.trim();
+                const phone = phoneInput.value.trim();
+                const spicy = spicyLevelSelect.value;
+                const scallion = scallionPrefSelect.value || '未选择';
+                
+                // 严格校验：桌号/房号、手机号、辣度为必填
+                if (!roomTable) { alert('请填写桌号/房号
